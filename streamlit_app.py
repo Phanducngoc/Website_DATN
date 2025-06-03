@@ -10,6 +10,40 @@ from neuralforecast.models import NHITS
 import os
 import datetime
 
+# ============ BẢO MẬT ĐĂNG NHẬP ============ #
+import hashlib
+
+# Danh sách tài khoản và mật khẩu
+USERS = {
+    "admin": "admin123",
+    "user1": "pass1"
+}
+
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def login():
+    st.markdown("## 🔐 Đăng nhập hệ thống")
+    username = st.text_input("Tài khoản")
+    password = st.text_input("Mật khẩu", type="password")
+    if st.button("Đăng nhập"):
+        if username in USERS and hash_password(password) == hash_password(USERS[username]):
+            st.success("✅ Đăng nhập thành công!")
+            st.session_state["logged_in"] = True
+            st.session_state["username"] = username
+            st.rerun()
+        else:
+            st.error("❌ Tài khoản hoặc mật khẩu không đúng.")
+
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
+
+if not st.session_state["logged_in"]:
+    login()
+    st.stop()  # Dừng ứng dụng nếu chưa đăng nhập
+# ============================================ #
+
+
 # Cấu hình trang
 st.set_page_config(
     page_title="Electric Power Forecasting & Anomaly Detection",
