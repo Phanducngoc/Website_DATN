@@ -263,6 +263,41 @@ def load_model():
 
 
 # Hàm cache cho việc tải và tiền xử lý dữ liệu
+# @st.cache_data
+# def load_and_preprocess(train_path, test_path):
+#     train_df = pd.read_csv(train_path, parse_dates=['NGAYGIO_rounded'])
+#     test_df = pd.read_csv(test_path, parse_dates=['NGAYGIO_rounded'])
+
+#     for df in (train_df, test_df):
+#         df.rename(columns={
+#             'SO_CTO': 'unique_id',
+#             'NGAYGIO_rounded': 'ds',
+#             'tv delta': 'y'
+#         }, inplace=True)
+#         if df['ds'].dt.tz is not None:
+#             df['ds'] = df['ds'].dt.tz_convert(None)
+#        # df.sort_values(['unique_id', 'ds'], inplace=True)
+#        # df.reset_index(drop=True, inplace=True)
+
+#     scalers = {}
+#     train_scaled, test_scaled = [], []
+#     for uid, grp in train_df.groupby('unique_id'):
+#         g_train = grp.copy()
+#         scaler = MinMaxScaler()
+#         g_train['y'] = scaler.fit_transform(g_train[['y']])
+#         scalers[uid] = scaler
+#         train_scaled.append(g_train)
+
+#         g_test = test_df[test_df['unique_id'] == uid].copy()
+#         if not g_test.empty:
+#             g_test['y'] = scaler.transform(g_test[['y']])
+#             test_scaled.append(g_test)
+
+#     train_scaled_df = pd.concat(train_scaled).reset_index(drop=True)
+#     test_scaled_df = pd.concat(test_scaled).reset_index(drop=True)
+#     return train_scaled_df, test_scaled_df, scalers
+
+
 @st.cache_data
 def load_and_preprocess(train_path, test_path):
     train_df = pd.read_csv(train_path, parse_dates=['NGAYGIO_rounded'])
@@ -276,11 +311,14 @@ def load_and_preprocess(train_path, test_path):
         }, inplace=True)
         if df['ds'].dt.tz is not None:
             df['ds'] = df['ds'].dt.tz_convert(None)
-       # df.sort_values(['unique_id', 'ds'], inplace=True)
-       # df.reset_index(drop=True, inplace=True)
+        
+        # Thêm cột đánh dấu thứ tự ban đầu
+        df['order'] = range(len(df))
 
     scalers = {}
     train_scaled, test_scaled = [], []
+    
+    # Scale theo từng unique_id
     for uid, grp in train_df.groupby('unique_id'):
         g_train = grp.copy()
         scaler = MinMaxScaler()
@@ -293,9 +331,16 @@ def load_and_preprocess(train_path, test_path):
             g_test['y'] = scaler.transform(g_test[['y']])
             test_scaled.append(g_test)
 
-    train_scaled_df = pd.concat(train_scaled).reset_index(drop=True)
-    test_scaled_df = pd.concat(test_scaled).reset_index(drop=True)
+    # Nối lại và sắp xếp theo thứ tự ban đầu
+    train_scaled_df = pd.concat(train_scaled).sort_values('order').reset_index(drop=True)
+    test_scaled_df = pd.concat(test_scaled).sort_values('order').reset_index(drop=True)
+
+    # Xóa cột order nếu không cần dùng nữa
+    train_scaled_df.drop(columns=['order'], inplace=True)
+    test_scaled_df.drop(columns=['order'], inplace=True)
+
     return train_scaled_df, test_scaled_df, scalers
+
 
 
 # Hàm lấy lịch sử dữ liệu
@@ -529,6 +574,9 @@ with st.sidebar:
     # Chọn công tơ
     unique_ids = test_df['unique_id'].drop_duplicates(keep='first').tolist()
     uid = st.selectbox("Chọn công tơ (unique_id):", unique_ids)
+
+    # unique_ids = test_df['unique_id'].unique()
+    # uid = st.selectbox("Chọn công tơ (unique_id):", unique_ids)
     
     # Chọn thời điểm bắt đầu dự báo
     start_dates = test_df[test_df['unique_id'] == uid]['ds'].dt.strftime('%Y-%m-%d %H:%M:%S').tolist()
