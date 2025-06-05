@@ -277,7 +277,7 @@ def load_and_preprocess(train_path, test_path):
         if df['ds'].dt.tz is not None:
             df['ds'] = df['ds'].dt.tz_convert(None)
        # df.sort_values(['unique_id', 'ds'], inplace=True)
-        df.reset_index(drop=True, inplace=True)
+       # df.reset_index(drop=True, inplace=True)
 
     scalers = {}
     train_scaled, test_scaled = [], []
