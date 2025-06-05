@@ -527,7 +527,7 @@ with st.sidebar:
     st.markdown("### ⚙️ Tham số đầu vào")
     
     # Chọn công tơ
-    unique_ids = sorted(test_df['unique_id'].unique())
+    unique_ids = test_df['unique_id'].drop_duplicates().tolist() 
     uid = st.selectbox("Chọn công tơ (unique_id):", unique_ids)
     
     # Chọn thời điểm bắt đầu dự báo
